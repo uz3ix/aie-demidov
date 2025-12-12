@@ -32,5 +32,5 @@ eda-cli report data.csv            # Полный EDA-отчет с график
 
 Пример вызова с параметрами: 
 ```
-eda-cli report data/example.csv --out-dir my_report --max-hist-columns 8 --top-k-categories 10 --title "Анализ данных клиентов" --min-missing-share 0.25
+uv run eda-cli report data/example.csv --out-dir my_report --max-hist-columns 8 --top-k-categories 10 --title "Анализ данных клиентов" --min-missing-share 0.25
 ```
