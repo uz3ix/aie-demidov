@@ -176,41 +176,41 @@ def compute_quality_flags(
     missing_df: pd.DataFrame,
     min_missing_share: float = 0.3,
 ) -> Dict[str, Any]:
-    """
-    Простейшие эвристики «качества» данных:
-    - слишком много пропусков;
-    - подозрительно мало строк;
-    и т.п.
-    """
     flags: Dict[str, Any] = {}
+
     flags["too_few_rows"] = summary.n_rows < 100
     flags["too_many_columns"] = summary.n_cols > 100
 
-    max_missing_share = float(missing_df["missing_share"].max()) if not missing_df.empty else 0.0
+    max_missing_share = (
+        float(missing_df["missing_share"].max()) if not missing_df.empty else 0.0
+    )
     flags["max_missing_share"] = max_missing_share
     flags["too_many_missing"] = max_missing_share > 0.5
 
     summary_df = flatten_summary_for_print(summary)
     num_constant_columns = int((summary_df["unique"] <= 1).sum())
+
+    flags["num_constant_columns"] = num_constant_columns
     flags["no_constant_columns"] = num_constant_columns == 0
     flags["some_constant_columns"] = 0 < num_constant_columns < 10
-    flags["too_many_constant_columns"] = num_constant_columns > 9
+    flags["too_many_constant_columns"] = num_constant_columns >= 10
 
     duplicate_rows_mask = df.duplicated(keep=False)
     num_duplicate_rows = int(duplicate_rows_mask.sum())
-    duplicate_rows_share = num_duplicate_rows / summary.n_rows if summary.n_rows > 0 else 0.0
+    duplicate_rows_share = (
+        num_duplicate_rows / summary.n_rows if summary.n_rows > 0 else 0.0
+    )
+
     flags["num_duplicate_rows"] = num_duplicate_rows
     flags["duplicate_rows_share"] = float(duplicate_rows_share)
     flags["has_duplicate_rows"] = num_duplicate_rows > 0
 
-    threshold = min_missing_share
     numeric_cols = df.select_dtypes(include=["number"]).columns
+    zero_ratios: Dict[str, float] = {}
 
     if len(numeric_cols) == 0:
-        flags["has_many_zero_values"] = False
-        flags["zero_ratios"] = {}
+        has_many_zeros = False
     else:
-        zero_ratios: Dict[str, float] = {}
         for col in numeric_cols:
             col_series = df[col]
             total_count = col_series.notna().sum()
@@ -218,30 +218,31 @@ def compute_quality_flags(
                 zero_count = (col_series == 0).sum()
                 zero_ratios[col] = zero_count / total_count
 
-        has_many_zeros = any(ratio > threshold for ratio in zero_ratios.values())
-        flags["has_many_zero_values"] = has_many_zeros
-        flags["zero_ratios"] = zero_ratios
+        has_many_zeros = any(ratio > min_missing_share for ratio in zero_ratios.values())
 
-    # Простейший «скор» качества
+    flags["zero_ratios"] = zero_ratios
+    flags["has_many_zero_values"] = has_many_zeros
+
     score = 1.0
-    score -= max_missing_share  # чем больше пропусков, тем хуже
-    if summary.n_rows < 100:
-        score -= 0.2
-    if summary.n_cols > 100:
-        score -= 0.1
-    if (num_constant_columns > 0) and (num_constant_columns < 10):
-        score -= 0.05
-    if num_constant_columns > 9:
-        score -= 0.1
-    if has_many_zeros: 
-        score -= 0.1
-    if num_duplicate_rows > 0:
-        score -= min(0.1, duplicate_rows_share * 0.5) 
+    score -= max_missing_share
 
-    score = max(0.0, min(1.0, score))
-    flags["quality_score"] = score
+    if flags["too_few_rows"]:
+        score -= 0.2
+    if flags["too_many_columns"]:
+        score -= 0.1
+    if flags["some_constant_columns"]:
+        score -= 0.05
+    if flags["too_many_constant_columns"]:
+        score -= 0.1
+    if flags["has_many_zero_values"]:
+        score -= 0.1
+    if flags["has_duplicate_rows"]:
+        score -= min(0.1, duplicate_rows_share * 0.5)
+
+    flags["quality_score"] = max(0.0, min(1.0, score))
 
     return flags
+
 
 
 def flatten_summary_for_print(summary: DatasetSummary) -> pd.DataFrame:
