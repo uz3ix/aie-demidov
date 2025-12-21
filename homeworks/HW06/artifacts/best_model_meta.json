@@ -1,0 +1,65 @@
+{
+  "model_name": "Gradient Boosting",
+  "model_type": "GradientBoostingClassifier",
+  "test_metrics": {
+    "accuracy": 0.9226666666666666,
+    "f1": 0.8739130434782608,
+    "roc_auc": 0.9663841348839571
+  },
+  "top_features": [
+    {
+      "feature": "num19",
+      "importance_mean": 0.11400000000000006,
+      "importance_std": 0.0064498061986388005
+    },
+    {
+      "feature": "num18",
+      "importance_mean": 0.08800000000000008,
+      "importance_std": 0.007771743691090186
+    },
+    {
+      "feature": "num07",
+      "importance_mean": 0.07060000000000007,
+      "importance_std": 0.006945502141674141
+    },
+    {
+      "feature": "num04",
+      "importance_mean": 0.03300000000000003,
+      "importance_std": 0.004560701700396555
+    },
+    {
+      "feature": "num24",
+      "importance_mean": 0.019400000000000018,
+      "importance_std": 0.004223742416388579
+    },
+    {
+      "feature": "num16",
+      "importance_mean": 0.014400000000000013,
+      "importance_std": 0.0034985711369071833
+    },
+    {
+      "feature": "num17",
+      "importance_mean": 0.013800000000000012,
+      "importance_std": 0.003544009029333873
+    },
+    {
+      "feature": "num20",
+      "importance_mean": 0.013400000000000013,
+      "importance_std": 0.004317406628984584
+    },
+    {
+      "feature": "num21",
+      "importance_mean": 0.013400000000000013,
+      "importance_std": 0.0024166091947189165
+    },
+    {
+      "feature": "num22",
+      "importance_mean": 0.01180000000000001,
+      "importance_std": 0.0038678159211627465
+    }
+  ],
+  "training_date": "2025-12-21 17:24:23",
+  "random_state": 42,
+  "test_size": 0.25,
+  "dataset": "S06-hw-dataset-01.csv"
+}
