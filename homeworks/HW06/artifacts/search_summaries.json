@@ -1,0 +1,6 @@
+{
+  "Decision Tree": {
+    "best_params": "{'criterion': 'gini', 'max_depth': 10, 'min_samples_leaf': 10, 'random_state': 42}",
+    "best_score": 0.9064656400674984
+  }
+}
