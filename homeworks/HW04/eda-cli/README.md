@@ -247,6 +247,87 @@ curl -X POST "http://127.0.0.1:8000/quality-from-csv" \
 
 ---
 
+### 5 `POST /quality-flags-from-csv` - полные флаги качества из CSV-файла
+
+Эндпоинт принимает CSV-файл и возвращает полный набор флагов качества, включая все числовые и булевые значения из функции compute_quality_flags.
+
+Отличие от /quality-from-csv:
+- Возвращает все флаги (не только булевы)
+- Включает расширенные метрики качества из HW03
+- Формат ответа: QualityFlagsResponse
+
+```
+POST /quality-flags-from-csv
+Content-Type: multipart/form-data
+file: <CSV-файл>
+```
+
+**Пример вызова через `curl` (Linux/macOS/WSL):**
+
+```
+curl -X POST "http://127.0.0.1:8000/quality-flags-from-csv" \
+  -F "file=@data/example.csv"
+```
+
+Пример ответа _200 OK_:
+
+```
+{
+  "flags": {
+    "too_few_rows": false,
+    "too_many_columns": false,
+    "too_many_missing": false,
+    "no_numeric_columns": false,
+    "no_categorical_columns": false,
+    "quality_score": 0.85,
+    "missing_rate": 0.05,
+    "total_rows": 10000,
+    "total_columns": 12,
+    ... // другие флаги из compute_quality_flags
+  },
+  "dataset_shape": {
+    "n_rows": 10000,
+    "n_cols": 12
+  },
+  "latency_ms": 15.3
+}
+```
+
+### 6 `POST /head` - просмотр первых N строк датасета
+Эндпоинт принимает CSV-файл и возвращает первые N строк в удобном JSON-формате.
+Параметры:
+- file: CSV-файл (обязательно)
+- n: количество строк для отображения (от 1 до 1000, по умолчанию 10)
+
+*Пример запроса*
+```
+POST /head
+Content-Type: multipart/form-data
+file: <CSV-файл>
+```
+
+**Пример вызова через `curl` (Linux/macOS/WSL):**
+```
+curl -X POST "http://127.0.0.1:8000/head?n=5" \
+  -F "file=@data/example.csv"
+```
+
+Пример ответа _200 OK_:
+```
+{
+  "n_rows": 5,
+  "total_rows": 10000,
+  "data": [
+    {
+      "column1": "value1",
+      "column2": 123,
+      ...
+    },
+    ...
+  ]
+}
+```
+
 ## Структура проекта (упрощённо)
 
 ```text
