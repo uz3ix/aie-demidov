@@ -2,6 +2,16 @@
   "dataset": "CIFAR10",
   "seed": 42,
   "experiment_id": "E4",
+  "input_shape": [
+    3,
+    32,
+    32
+  ],
+  "batch_size": 128,
+  "criterion": "CrossEntropyLoss",
+  "epochs_planned": 30,
+  "epochs_trained": 9,
+  "early_stop_patience": 4,
   "model_cfg": {
     "hidden_sizes": [
       512,
@@ -16,5 +26,7 @@
     "name": "adam",
     "lr": 0.001,
     "weight_decay": 0.0
-  }
+  },
+  "best_val_accuracy": 0.533623417721519,
+  "best_val_loss": 1.3268120251124418
 }
