@@ -1,52 +1,121 @@
-# HW10-11 - Report
+# HW10-11 - компьютерное зрение в PyTorch: CNN, transfer learning, detection
 
 ## 1. Кратко: что сделано
-- Часть A: классификация на `STL10` с экспериментами `C1-C4`.
-- Часть B: segmentation на `OxfordIIITPet` с режимами `V1-V2`.
-- Все результаты сохранены в [artifacts/runs.csv](artifacts/runs.csv).
+
+Для части A был выбран датасет `STL10`, для удобного проведения эксперимента.
+
+Для части B был выбран трек `Detection`, для рассмотрения детекции и чтобы посмотреть как это выглядит на практике.
+
+В части A сравнивались `C1-C4`: простая CNN без аугментаций, CNN с аугментациями, `ResNet18` с обучением только головы и `ResNet18` с fine-tuning последнего блока.
+
+Во второй части сравнивались два режима инференса детектора:
+- `V1`: `score_threshold = 0.3`
+- `V2`: `score_threshold = 0.7`
 
 ## 2. Среда и воспроизводимость
-- Framework: `PyTorch` + `torchvision`
+
+- Python: `3.11`
+- `torch` и `torchvision`
+- Устройство: `CPU`
 - Seed: `42`
-- Device: `cuda`, если доступен, иначе `cpu`
+- Как запустить: открыть `HW10-11.ipynb` и выполнить `Run All`
 
 ## 3. Данные
-- Датасет части A: `STL10` из `torchvision.datasets.STL10`.
-- Split части A: `train` разбит на `train/val` в пропорции `80/20`, `test` использован для финальной оценки лучшей модели.
-- Датасет части B: `OxfordIIITPet` из `torchvision.datasets.OxfordIIITPet`.
-- Foreground для segmentation: пиксели питомца, где trimap `!= 2`.
+
+### 3.1. Часть A: классификация
+
+- Датасет: `STL10`
+- Разделение: `train/val/test`
+- Базовые transforms: `ToTensor`, `Normalize` (Z-нормализация)
+- Augmentation transforms: `RandomCrop`, `RandomInvert`, `GaussianBlur`
+- Комментарий: в датасете 10 классов, изображения размера `96x96`, 3 канала, обучающая выборка - `5000`, тестовая - `8000`
+
+### 3.2. Часть B: structured vision
+
+- Датасет: `KITTI`
+- Трек: `detection`
+- Что считается ground truth: изображение
+- Какие предсказания использовались: `-`
+- Комментарий: `STL10` подходит для изучения detection pipeline
 
 ## 4. Часть A: модели и обучение (C1-C4)
-- `C1`: simple CNN без аугментаций.
-- `C2`: та же simple CNN, но с аугментациями `RandomResizedCrop`, `RandomHorizontalFlip`, `ColorJitter`.
-- `C3`: `ResNet18` с pretrained weights, обучается только классификационная голова.
-- `C4`: `ResNet18` с pretrained weights, partial fine-tuning для `layer4 + fc`.
-- Loss: `CrossEntropyLoss`.
-- Основная метрика: `accuracy`.
-- Артефакты: [artifacts/best_classifier.pt](artifacts/best_classifier.pt), [artifacts/best_classifier_config.json](artifacts/best_classifier_config.json), [artifacts/figures/classification_curves_best.png](artifacts/figures/classification_curves_best.png), [artifacts/figures/classification_compare.png](artifacts/figures/classification_compare.png), [artifacts/figures/augmentations_preview.png](artifacts/figures/augmentations_preview.png).
+
+- `C1 (simple-cnn-base)`: `Conv2d(3→96) + ReLU + MaxPool2d`
+- `C2 (simple-cnn-aug)`: `Conv2d(96→64) + ReLU + MaxPool2d + augmentations (RandomCrop, RandomInvert, GaussianBlur)`
+- `C3 (resnet18-head-only)`: `224x224`, предобученная голова
+- `C4 (resnet18-finetune)`: `224x224`, предобученная голова + последний слой
+
+Дополнительно:
+
+- Loss: `CrossEntropyLoss`
+- Optimizer: `Adam`
+- Batch size: `128`
+- Epochs (макс): `4`
+- Критерий выбора лучшей модели: `best_val_accuracy`
 
 ## 5. Часть B: постановка задачи и режимы оценки (V1-V2)
-- Трек: `segmentation`.
-- Модель: pretrained `DeepLabV3_ResNet50`.
-- `V1`: threshold `0.5`.
-- `V2`: threshold `0.7`.
-- Метрики: `mean_iou`, `precision`, `recall`.
-- Артефакты: [artifacts/figures/segmentation_examples.png](artifacts/figures/segmentation_examples.png), [artifacts/figures/segmentation_metrics.png](artifacts/figures/segmentation_metrics.png).
+
+Если выбран `detection track`:
+
+- Модель: `Faster R-CNN`
+- `V1`: `score_threshold = 0.3`
+- `V2`: `score_threshold = 0.7`
+- Как считался IoU: `IoU = Area(intersection) / Area(union)`
+- Как считались precision / recall: `TP / (TP + FP)` и `TP / (TP + FN)`
+
+Если выбран `segmentation track`:
+
+- Модель: `-`
+- Что считается foreground: `-`
+- `V1`: базовая постобработка
+- `V2`: альтернативная постобработка
+- Как считался mean IoU: `-`
+- Считались ли дополнительные pixel-level метрики: `-`
 
 ## 6. Результаты
-- Лучшая модель части A по `best_val_accuracy`: `C4` с `val_accuracy=0.9570`.
-- Финальная `test_accuracy` лучшей модели: `0.9481`.
-- `V1`: precision=`0.9575`, recall=`0.8665`, mean_iou=`0.8325`.
-- `V2`: precision=`0.9697`, recall=`0.8087`, mean_iou=`0.7871`.
-- Полная таблица результатов: [artifacts/runs.csv](artifacts/runs.csv).
+
+Ссылки на файлы в репозитории:
+
+- Таблица результатов: `./artifacts/runs.csv`
+- Лучшая модель части A: `./artifacts/best_classifier.pt`
+- Конфиг лучшей модели части A: `./artifacts/best_classifier_config.json`
+- Кривые лучшего прогона классификации: `./artifacts/figures/classification_curves_best.png`
+- Сравнение `C1-C4`: `./artifacts/figures/classification_compare.png`
+- Визуализация аугментаций: `./artifacts/figures/augmentations_preview.png`
+- Визуализации второй части: `./artifacts/figures/detection_examples.png`
+- Визуализации второй части: `./artifacts/figures/detection_metrics.png`
+
+Короткая сводка:
+
+- Лучший эксперимент части A: `C4 (ResNet18 fine-tune)`
+- Лучшая `val_accuracy`: `0.943`
+- Итоговая `test_accuracy` лучшего классификатора: `0.939`
+- Что дали аугментации (`C2` vs `C1`): аугментации улучшили `test accuracy`
+- Что дал transfer learning (`C3/C4` vs `C1/C2`): сильно улучшил `test accuracy`
+- Что оказалось лучше: `head-only` или `partial fine-tuning`: `fine-tuning`
+- Что показал режим `V1` во второй части: низкий `recall`
+- Что показал режим `V2` во второй части: повышение `precision`
+- Как интерпретируются метрики второй части: модель плохо детектирует объекты на `KITTI` без дообучения
 
 ## 7. Анализ
-- Аугментации в `C2` улучшают устойчивость модели по сравнению с базовым `C1`.
-- Transfer learning на `ResNet18` даёт заметный прирост относительно простой CNN.
-- Partial fine-tuning в `C4` оказался лучше, чем head-only обучение в `C3`.
-- Для segmentation увеличение threshold с `0.5` до `0.7` повышает precision, но снижает recall и `mean_iou`.
+
+CNN ведет себя плохо на выбранном датасете из-за относительно небольшого количества данных для обучения. Аугментация улучшила `test accuracy` при одинаковой `val accuracy`. А также аугментации помогают модели лучше обобщаться, не переобучаясь на тренировочных данных.
+
+`head-only` сильно превосходит простую CNN, так как уже имеет набор предобученных признаков. Разморозка последнего блока позволила модели адаптировать признаки под `STL10`.
+
+При повышении порога уверенности наблюдается рост `precision` и падение `recall`: остаются только уверенные детекции, но больше объектов пропускается. Модель пропускает большинство объектов.
 
 ## 8. Итоговый вывод
-- Обязательный минимум HW10-11 выполнен.
-- В части A показан эффект CNN, аугментаций и transfer learning.
-- В части B выполнен запуск готового segmentation pipeline, визуализация результатов и расчёт базовых метрик.
+
+`C4` — `ResNet18` с `fine-tuning layer4+fc`. Он даёт наилучшее качество при небольших затратах времени на обучение. Предобученная модель показывает лучший результат, её нужно лишь немного адаптировать под конкретные нужды.
+
+Для детекции важно не только считать `TP/FP`, но и оценивать качество локализации через `IoU`.
+
+## 9. Приложение (опционально)
+
+Если выполнялись дополнительные сравнения:
+
+- дополнительные `fine-tuning` сценарии
+- `confusion matrix` для классификации
+- дополнительная постобработка для второй части
+- дополнительные графики: `./artifacts/figures/...`
